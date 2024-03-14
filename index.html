@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Basic Embed</title>
+    <!-- You can download the latest QuickSight embedding SDK version from https://www.npmjs.com/package/amazon-quicksight-embedding-sdk -->
+    <!-- Or you can do "npm install amazon-quicksight-embedding-sdk", if you use npm for javascript dependencies -->
+    <script src="https://unpkg.com/amazon-quicksight-embedding-sdk@2.6.0/dist/quicksight-embedding-js-sdk.min.js"></script>
+    <script type="text/javascript">
+        const embedDashboard = async () => {
+            const {
+                createEmbeddingContext,
+            } = QuickSightEmbedding;
+
+            const embeddingContext = await createEmbeddingContext();
+
+            const containerDiv = document.getElementById("embedding-container");
+
+            const frameOptions = {
+                // replace the value below with the one generated via embedding API
+                url: "<YOUR_EMBED_URL>",
+                container: containerDiv,
+                height: "700px",
+                width: "1000px",
+            };
+
+            const contentOptions = {
+                toolbarOptions: {
+                    export: false,
+                    undoRedo: false, // use this option to show or hide the undo and redo buttons
+                    reset: false, // use this option to show or hide the  reset button
+                },
+                sheetOptions: {
+                    initialSheetId: '<YOUR_SHEET_ID>',
+                    singleSheet: false, // use this option to enable or disable sheet tab controls
+                    emitSizeChangedEventOnSheetChange: false, // use this option in combination with resizeHeightOnSizeChangedEvent property,
+                                                              // to allow iframe height to resize dynamically, based on sheet height, on changing sheets.
+                },
+                attributionOptions: {
+                    overlayContent: false,
+                },
+            };
+
+            const embeddedDashboard = await embeddingContext.embedDashboard(frameOptions, contentOptions);
+        };
+    </script>
+</head>
+
+<body onload="embedDashboard()">
+    <div id="embedding-container"></div>
+</body>
+    <script>
+        global.fetch = require('node-fetch');
+        const AWS = require('aws-sdk');
+
+        function generateEmbedUrlForAnonymousUser(
+            accountId, // YOUR  ID
+            initialDashboardId, // DASHBOARD ID TO WHICH THE CONSTRUCTED URL POINTS
+            quicksightNamespace, // VALID NAMESPACE WHERE YOU WANT TO DO NOAUTH EMBEDDING
+            authorizedResourceArns, // DASHBOARD ARN LIST TO EMBED
+            // sessionTags, // SESSION TAGS USED FOR ROW-LEVEL SECURITY
+            generateEmbedUrlForAnonymousUserCallback, // GENERATEEMBEDURLFORANONYMOUSUSER SUCCESS CALLBACK METHOD
+            errorCallback // GENERATEEMBEDURLFORANONYMOUSUSER ERROR CALLBACK METHOD
+            ) {
+            const experienceConfiguration = {
+                "Dashboard": {
+                    "InitialDashboardId": "b2ded5d4-d783-4d55-8d7c-d05cfb20cb16"
+                }
+            };
+
+            const generateEmbedUrlForAnonymousUserParams = {
+                "AwsAccountId": "471112932293",
+                "Namespace": "471112932293",
+                "AuthorizedResourceArns": "arn:aws:quicksight:us-east-1:471112932293:dashboard/dashboard-b2ded5d4-d783-4d55-8d7c-d05cfb20cb16",
+                "ExperienceConfiguration": experienceConfiguration,
+                // "SessionTags": sessionTags,
+                "SessionLifetimeInMinutes": 600
+            };
+
+            const quicksightClient = new AWS.QuickSight({
+                region: process.env.AWS_REGION,
+            });
+
+            quicksightClient.generateEmbedUrlForAnonymousUser(generateEmbedUrlForAnonymousUserParams, function(err, data) {
+                if (err) {
+                    console.log(err, err.stack);
+                    errorCallback(err);
+                } else {
+                    const result = {
+                        "statusCode": 200,
+                        "headers": {
+                            "Access-Control-Allow-Origin": "*", // USE YOUR WEBSITE DOMAIN TO SECURE ACCESS TO THIS API
+                            "Access-Control-Allow-Headers": "Content-Type"
+                        },
+                        "body": JSON.stringify(data),
+                        "isBase64Encoded": false
+                    }
+                    generateEmbedUrlForAnonymousUserCallback(result);
+                }
+            });
+        }
+
+    </script>
+</html>
